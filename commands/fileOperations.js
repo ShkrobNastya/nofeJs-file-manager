@@ -7,6 +7,10 @@ import { getPath, handleError } from '../helpers/helpers.js';
 const pipe = promisify(pipeline);
 
 export const cat = async (file) => {
+    if (!file) {
+        handleError('Invalid input');
+        return;
+    }
     const filePath = getPath(file);
 
     try {
@@ -26,24 +30,54 @@ export const cat = async (file) => {
 };
 
 export const add = async (file) => {
+    if (!file) {
+        handleError('Invalid input');
+        return;
+    }
     const filePath = getPath(file);
 
     await fs.promises.writeFile(filePath, '', { flag: 'wx' });
 };
 
 export const mkdir = async (file) => {
+    if (!file) {
+        handleError('Invalid input');
+        return;
+    }
     const newDir = getPath(file);
 
-    await fs.promises.mkdir(newDir);
+     try {
+        await fs.promises.access(newDir);
+        handleError();
+    } catch {
+        try {
+            await fs.promises.mkdir(newDir);
+        } catch {
+            handleError();
+        }
+    }
 };
 
 export const rn = async (filePath, newName) => {
+    if (!filePath || !newName) {
+        handleError('Invalid input');
+        return;
+    }
     const oldFilePath = getPath(filePath);
-    const newFilePath = path.join(path.dirname(oldFilePath), newName);
-    await fs.promises.rename(oldFilePath, newFilePath);
+    try {
+        await fs.promises.access(oldFilePath);
+        const newFilePath = path.join(path.dirname(oldFilePath), newName);
+        await fs.promises.rename(oldFilePath, newFilePath);
+    } catch {
+        handleError();
+    }
 };
 
 export const cp = async (src, destDir) => {
+    if (!src || !destDir) {
+        handleError('Invalid input');
+        return;
+    }
     const srcPath = getPath(src);
     const destPath = getPath(destDir);
     const fileName = path.basename(srcPath);
@@ -58,13 +92,16 @@ export const cp = async (src, destDir) => {
 
         await pipe(readStream, writeStream);
 
-    } catch(e) {
-        console.log(e);
+    } catch {
         handleError();
     }
 };
 
 export const mv = async (src, destDir) => {
+    if (!src || !destDir) {
+        handleError('Invalid input');
+        return;
+    }
     const srcPath = getPath(src);
     const destPath = getPath(destDir);
     const fileName = path.basename(srcPath);
@@ -80,11 +117,21 @@ export const mv = async (src, destDir) => {
         await pipe(readStream, writeStream);
         await fs.promises.unlink(srcPath);
     } catch {
-        handleError('Operation failed');
+        handleError();
     }
 };
 
 export const rm = async (file) => {
+    if (!file) {
+        handleError('Invalid input');
+        return;
+    }
     const filePath = getPath(file);
-    await fs.promises.unlink(filePath);
+    try {
+        await fs.promises.access(filePath);
+        await fs.promises.unlink(filePath);
+    }
+    catch {
+        handleError();
+    }
 };
